@@ -6,9 +6,28 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    xmlns:Maps="using:Windows.UI.Xaml.Controls.Maps"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid>
+        <Maps:MapControl x:Name="MapCtrl"
+            MapServiceToken="AkVm6BZviS25-7mLQNpXUKvwcY3PxZsY7drDLo_QHRUao3xwbyEUsH2T7sOhXdWo"
+           >
+            <Maps:MapItemsControl x:Name="MapItems">
+                <Maps:MapItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Background="Black">
+                            <TextBlock Maps:MapControl.Location="{Binding Location}" 
+                                       Text="{Binding Name}" 
+                                       Maps:MapControl.NormalizedAnchorPoint="0.5,0.5" FontSize="20" Margin="5"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </Maps:MapItemsControl.ItemTemplate>
+
+
+            </Maps:MapItemsControl>
+            
+        </Maps:MapControl>
 
     </Grid>
 </Page>
