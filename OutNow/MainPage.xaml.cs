@@ -18,7 +18,10 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using OutNow.Common;
 using System.Threading;
-using System.Linq;
+using Windows.UI.Xaml.Media.Imaging;
+using Windows.System.Threading;
+using System.Threading.Tasks;
+using Windows.UI.Xaml.Controls.Maps;
 // Pour en savoir plus sur le modèle d'élément Page vierge, consultez la page http://go.microsoft.com/fwlink/?LinkId=391641
 
 namespace OutNow
@@ -28,8 +31,8 @@ namespace OutNow
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private static Uri eventsURL = new Uri("http://169.254.210.210:8081/databases/OutNow/indexes/Raven/DocumentsByEntityName?&query=Tag%3AEvent&pageSize=30&noCache=1446174288");
-        private static Uri eventsURLAdd = new Uri("http://169.254.210.210:8081/databases/OutNow/docs/Events/");
+        private static Uri eventsURL = new Uri("http://169.254.80.80:8081/databases/OutNow/indexes/Raven/DocumentsByEntityName?&query=Tag%3AEvent&pageSize=30&noCache=1446174288");
+        private static Uri eventsURLAdd = new Uri("http://169.254.80.80:8081/databases/OutNow/docs/Events/");
         private CancellationTokenSource cts;
         private ObservableCollection<Event> Events = new ObservableCollection<Event>();
      
@@ -40,25 +43,38 @@ namespace OutNow
             this.NavigationCacheMode = NavigationCacheMode.Required;
          
             MapItems.ItemsSource = Events;
+            
+
+            MapCtrl.Center = new Geopoint(new BasicGeoposition() { Latitude = 47.604, Longitude = -122.329 });
+            MapCtrl.ZoomLevel = 12;
+            MapCtrl.MapHolding += MapCtrl_MapHolding;
+
         }
         private async void AddEvent(Geopoint location)
         {
-            var evt = new Event() { Location = location, Latitude = location.Position.Latitude, Longitude = location.Position.Longitude, Name = "new evt" };
-            Events.Add(evt);
-            // get first level nav
-            var httpClient = new HttpClient();
-            
-            httpClient.DefaultRequestHeaders.Add("Raven-Entity-Name","Event");
-            cts = new CancellationTokenSource();
+            try
+            {
+                var evt = new Event() { Location = location, Latitude = location.Position.Latitude, Longitude = location.Position.Longitude, Name = "new evt" };
+                Events.Add(evt);
+                // get first level nav
+                var httpClient = new HttpClient();
 
-            StringContent queryString = new StringContent(evt.ToJson<Event>());
-            HttpResponseMessage response = await httpClient.PutAsync(eventsURLAdd, queryString);
-            response.EnsureSuccessStatusCode();
-            String content = response.Content.ReadAsStringAsync().Result;
+                httpClient.DefaultRequestHeaders.Add("Raven-Entity-Name", "Event");
+                cts = new CancellationTokenSource();
 
+                StringContent queryString = new StringContent(evt.ToJson<Event>());
+                HttpResponseMessage response = await httpClient.PutAsync(eventsURLAdd, queryString);
+                response.EnsureSuccessStatusCode();
+                String content = response.Content.ReadAsStringAsync().Result;
+            }
+            catch (Exception e)
+            {
+
+            }
 
         }
 
+        private bool loaded = false;
         /// <summary>
         /// Invoqué lorsque cette page est sur le point d'être affichée dans un frame.
         /// </summary>
@@ -66,21 +82,43 @@ namespace OutNow
         /// Ce paramètre est généralement utilisé pour configurer la page.</param>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
-            MapCtrl.Center = new Geopoint(new BasicGeoposition() { Latitude = 47.604, Longitude = -122.329 });
-            MapCtrl.ZoomLevel = 12;
-            MapCtrl.MapHolding += MapCtrl_MapHolding;
-
+            if (loaded)
+                return;
+           // MapCtrl.GetValue(MapControl.NormalizedAnchorPointProperty)
+            
             var test = (await EventsDataSource.GetEventsAsync()).ToList();
-            foreach (var tt in test)
-            {
-                Events.Add(tt);
-            }
+            loaded = true;
+            //Task.Run(new Action(()=>{
+                foreach (var tt in test)
+                {
+                    
+                    Events.Add(tt);
+                    
+                }
+            //}));
         }
 
         void MapCtrl_MapHolding(Windows.UI.Xaml.Controls.Maps.MapControl sender, Windows.UI.Xaml.Controls.Maps.MapInputEventArgs args)
         {
             AddEvent(args.Location);
-            
+        }
+
+
+        private EventControl previousEventTapped;
+        void EventTapped(object sender, TappedRoutedEventArgs e)
+        {
+            var eventTapped = (sender as EventControl);
+            if (previousEventTapped != eventTapped)
+            {
+                if (previousEventTapped != null)
+                    VisualStateManager.GoToState(previousEventTapped, "Normal", true);
+                VisualStateManager.GoToState(eventTapped, "Selected", true);
+            }
+            else
+            {
+                this.Frame.Navigate(typeof(EventPage), eventTapped.DataContext);
+            }
+            previousEventTapped = eventTapped;
         }
 
     }

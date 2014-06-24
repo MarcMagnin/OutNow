@@ -35,6 +35,7 @@ namespace OutNow
         {
             this.InitializeComponent();
             this.Suspending += this.OnSuspending;
+            
         }
 
         /// <summary>
@@ -87,7 +88,7 @@ namespace OutNow
 
                 rootFrame.ContentTransitions = null;
                 rootFrame.Navigated += this.RootFrame_FirstNavigated;
-
+                
                 // Quand la pile de navigation n'est pas restaurée, accédez à la première page,
                 // puis configurez la nouvelle page en transmettant les informations requises en tant que
                 // paramètre
